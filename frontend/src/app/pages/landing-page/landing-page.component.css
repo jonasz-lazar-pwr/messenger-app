@@ -1,0 +1,8 @@
+/* Opcjonalne dodatkowe style, jeśli chcesz większą kontrolę */
+.container {
+  text-align: center;
+}
+
+h2 {
+  font-weight: bold;
+}

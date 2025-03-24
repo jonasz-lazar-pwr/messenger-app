@@ -1,0 +1,97 @@
+<div class="container-fluid vh-100">
+  <div class="row h-100">
+
+    <!-- Sidebar: Conversations -->
+    <div class="col-md-3 border-end d-flex flex-column h-100">
+      <div class="flex-grow-1 overflow-auto">
+        <!-- Header -->
+        <div class="p-3 border-bottom">
+          <h3 class="m-1 text-center">Your Chats.</h3>
+        </div>
+
+        <!-- Conversations list -->
+        <div
+          *ngFor="let conversation of conversations"
+          (click)="selectConversation(conversation)"
+          class="p-3 border-bottom conversation-item"
+          [class.bg-light]="selectedConversation?.id === conversation.id"
+          style="cursor: pointer;"
+        >
+          <strong>{{ conversation.participant.first_name }} {{ conversation.participant.last_name }}</strong>
+        </div>
+      </div>
+
+      <div class="p-3 border-top">
+        <button (click)="logout()" class="btn btn-outline-danger w-100">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div class="col-md-9 d-flex flex-column h-100">
+      <div *ngIf="selectedConversation; else placeholder" class="d-flex flex-column h-100">
+        <h5 class="p-3 border-bottom">
+          {{ selectedConversation.participant.first_name }} {{ selectedConversation.participant.last_name }}
+        </h5>
+
+        <!-- Message list -->
+        <div class="flex-grow-1 overflow-auto p-3 bg-white">
+          <div
+            *ngFor="let message of messages"
+            class="mb-2 d-flex"
+            [ngClass]="{
+          'justify-content-end': message.sender_sub === userSub,
+          'justify-content-start': message.sender_sub !== userSub
+        }"
+          >
+            <div
+              [ngClass]="{
+            'bg-primary text-white': message.sender_sub === userSub,
+            'bg-light text-dark': message.sender_sub !== userSub
+          }"
+              class="p-2 px-3 rounded-pill"
+              style="max-width: 60%; word-wrap: break-word;"
+            >
+              {{ message.content }}
+            </div>
+          </div>
+          <div #messagesEnd></div>
+        </div>
+
+        <!-- Input form -->
+        <div class="border-top p-3">
+          <form (ngSubmit)="handleSend()" class="d-flex gap-2 align-items-center">
+            <!-- File Upload or Cancel Button -->
+            <ng-container *ngIf="!selectedFile; else cancelButton">
+              <label class="btn btn-outline-secondary m-0">
+                +
+                <input type="file" name="file" hidden (change)="handleFileSelect($event)">
+              </label>
+            </ng-container>
+
+            <ng-template #cancelButton>
+              <button type="button" class="btn btn-outline-danger m-0" (click)="clearSelectedFile()">✖</button>
+            </ng-template>
+
+            <!-- Text input -->
+            <input
+              type="text"
+              [value]="selectedFile ? selectedFile.name : newMessage"
+              [readonly]="selectedFile !== null"
+              [(ngModel)]="newMessage"
+              name="message"
+              class="form-control"
+              [placeholder]="selectedFile ? '' : 'Type your message...'"
+            />
+
+            <!-- Send button -->
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+        </div>
+      </div>
+
+      <ng-template #placeholder>
+        <div class="text-center text-muted mt-5">Select a conversation from the list</div>
+      </ng-template>
+    </div>
+  </div>
+</div>
