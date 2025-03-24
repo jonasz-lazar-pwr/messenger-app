@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vscode/
+.git/
+*.log
+*.env
+.DS_Store
+.editorconfig
+README.md
+LICENSE
+.gitignore
+.dockerignore
+Dockerfile*
+docker-compose*
