@@ -20,9 +20,7 @@
 - [License](#license)
 
 ## About the Project
-Messenger App is a simple web-based chat application that allows users to participate in conversations by sending text messages and media files.
-
-This project is designed with a modular architecture, separating the frontend and backend into independent services.
+Messenger App is a simple web-based chat application that allows users to participate in conversations by sending text messages and media files. This project is designed with a modular architecture, separating the frontend and backend into independent services.
 It focuses on delivering a functional, user-friendly, and scalable chat experience deployed in the cloud.
 
 ## Features
