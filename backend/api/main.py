@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from api.auth.jwt_bearer import JWTBearer
 from api.core.middleware import add_middleware
-from api.db.deps import get_db
+from api.services.db.deps import get_db
+from api.services.s3 import upload_file_to_s3
 
 from api.models.conversation import Conversation
 from api.models.message import Message
@@ -22,6 +23,20 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 add_middleware(app)
+
+
+@app.get(
+    "/",
+    summary="Health check",
+    description="Basic health check endpoint for Elastic Beanstalk",
+    tags=["Health"]
+)
+def health_check():
+    """
+    Simple health check endpoint that returns 200 OK.
+    Used by Elastic Beanstalk to determine application health.
+    """
+    return {"status": "ok"}
 
 
 @app.post(
@@ -237,13 +252,23 @@ async def upload_media_message(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Simulate S3 upload (placeholder)
-    fake_s3_url = f"https://fake-s3.dev.local/{file.filename}"
+    # fake_s3_url = f"https://fake-s3.dev.local/{file.filename}"
 
     # Save message with fake S3 URL as content
+    # new_message = Message(
+    #     conversation_id=conversation_id,
+    #     sender_sub=user_sub,
+    #     content=fake_s3_url
+    # )
+
+    # Upload to S3
+    s3_url = upload_file_to_s3(file.file, file.filename)
+
+    # Save message with real S3 URL as content
     new_message = Message(
         conversation_id=conversation_id,
         sender_sub=user_sub,
-        content=fake_s3_url
+        content=s3_url
     )
     db.add(new_message)
     db.commit()

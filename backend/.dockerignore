@@ -114,3 +114,8 @@ celerybeat.pid
 **/.aws
 **/.ssh
 ./postgres-data
+
+# =========================
+.zipignore
+*.sh
+*.zip
