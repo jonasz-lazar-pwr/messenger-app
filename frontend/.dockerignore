@@ -1,0 +1,45 @@
+# Ogólne pliki i foldery systemowe
+.DS_Store
+*.log
+*.zip
+*.sh
+
+# Wrażliwe dane
+.env
+
+# Konfiguracja Docker / CI
+.dockerignore
+docker-compose*
+Dockerfile
+.zipignore
+
+# Systemy kontroli wersji
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# 🧪 Testy
+*.spec.ts
+
+# Pliki robocze Angulara / Node
+node_modules/
+.angular/
+src/
+package.json
+package-lock.json
+angular.json
+tsconfig*.json
+eslint.config.js
+.editorconfig
+README.md
+LICENSE
+
+# Build cache / DB dev
+*.tsbuildinfo
+*.db
+*.db-lock
+
+# Niepotrzebne pliki z builda (opcjonalne)
+dist/frontend/prerendered-routes.json
+dist/frontend/3rdpartylicenses.txt

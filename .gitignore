@@ -234,3 +234,9 @@ buildNumber.properties
 *.swo
 *.bak
 *.tmp
+
+# =========================
+.zipignore
+zip-from-ignore.sh
+*.sh
+*.zip

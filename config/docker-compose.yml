@@ -1,0 +1,49 @@
+services:
+#  database:
+#    image: postgres:15-alpine
+#    container_name: postgres
+#    environment:
+#      POSTGRES_DB: "${DB_NAME}"
+#      POSTGRES_USER: "${DB_USER}"
+#      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    ports:
+#      - "${DB_PORT}:${DB_PORT}"
+#    env_file:
+#      - .env
+
+#  backend:
+#    image: backend
+#    container_name: backend
+#    build:
+#      context: ../backend
+#      dockerfile: Dockerfile
+#    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+#    volumes:
+#      - ../backend:/app
+#    ports:
+#      - "${BACKEND_PORT}:${BACKEND_PORT}"
+#    env_file:
+#      - .env
+#    depends_on:
+#      - database
+
+  frontend:
+    image: frontend
+    container_name: frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    env_file:
+      - .env
+#    environment:
+#      BACKEND_HOST: "${BACKEND_HOST}"
+#      BACKEND_PORT: "${BACKEND_PORT}"
+#    depends_on:
+#      - backend
+
+#volumes:
+#  postgres_data:
