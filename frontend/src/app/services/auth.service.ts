@@ -4,7 +4,8 @@ import { catchError, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { jwtDecode } from 'jwt-decode';
-import { environment } from '../../environments/environment';
+// import { environment } from '../../environments/environment';
+import { runtimeEnv } from '../../environments/runtime-env';
 
 @Injectable({
   providedIn: 'root'
@@ -90,6 +91,6 @@ export class AuthService {
     this.oidcSecurityService.logoff();
 
     // Redirect after logout
-    window.location.href = `${environment.cognitoLogoutUrl}?client_id=${environment.clientId}&logout_uri=${environment.postLogoutRedirectUri}`;
+    window.location.href = `${runtimeEnv.cognitoLogoutUrl}?client_id=${runtimeEnv.clientId}&logout_uri=${runtimeEnv.postLogoutRedirectUri}`;
   }
 }

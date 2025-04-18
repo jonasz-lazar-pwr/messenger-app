@@ -7,7 +7,8 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../environments/environment';
+// import { environment } from '../../environments/environment';
+import { runtimeEnv } from '../../environments/runtime-env';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -21,7 +22,7 @@ export class AuthInterceptor implements HttpInterceptor {
     if (req.url.startsWith('/api') && idToken) {
       const apiReq = req.clone({
         // Prefix the request with the full backend API base URL
-        url: `${environment.apiUrl}${req.url}`,
+        url: `${runtimeEnv.apiUrl}${req.url}`,
         // Attach the Authorization header with the user's ID token
         setHeaders: {
           Authorization: `Bearer ${idToken}`
