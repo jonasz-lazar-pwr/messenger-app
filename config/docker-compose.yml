@@ -13,19 +13,19 @@ services:
 #    env_file:
 #      - .env
 
-  backend:
-    image: backend
-    container_name: backend
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
-    volumes:
-      - ../backend:/app
-    ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
-    env_file:
-      - .env
+#  backend:
+#    image: backend
+#    container_name: backend
+#    build:
+#      context: ../backend
+#      dockerfile: Dockerfile
+#    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+#    volumes:
+#      - ../backend:/app
+#    ports:
+#      - "${BACKEND_PORT}:${BACKEND_PORT}"
+#    env_file:
+#      - .env
 #    depends_on:
 #      - database
 
@@ -37,13 +37,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4200:80"
-    depends_on:
-      - backend
     env_file:
       - .env
-    environment:
-      BACKEND_HOST: "${BACKEND_HOST}"
-      BACKEND_PORT: "${BACKEND_PORT}"
+#    environment:
+#      BACKEND_HOST: "${BACKEND_HOST}"
+#      BACKEND_PORT: "${BACKEND_PORT}"
+#    depends_on:
+#      - backend
 
 #volumes:
 #  postgres_data:
