@@ -1,0 +1,131 @@
+services:
+  # === PostgreSQL ===
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: "${PSQL_NAME}"
+      POSTGRES_USER: "${PSQL_USER}"
+      POSTGRES_PASSWORD: "${PSQL_PASSWORD}"
+    ports:
+      - "${PSQL_PORT}:${PSQL_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # === LocalStack ===
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    environment:
+      - SERVICES=dynamodb,s3,sns,ses
+      - DEFAULT_REGION=${AWS_REGION}
+    ports:
+      - "${LOCALSTACK_PORT}:${LOCALSTACK_PORT}"
+    volumes:
+      - ./localstack:/etc/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # === Chat service ===
+  chat-service:
+    image: chat-service:latest
+    container_name: chat-service
+    build:
+      context: ../chat-service
+      dockerfile: Dockerfile
+    command: >
+      uvicorn api.main:app --host 0.0.0.0 --port ${CHAT_SERVICE_PORT}
+    ports:
+      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    volumes:
+      - ../chat-service:/app
+
+  # === Media service ===
+  media-service:
+    image: media-service:latest
+    container_name: media-service
+    build:
+      context: ../media-service
+      dockerfile: Dockerfile
+    command: >
+      uvicorn api.main:app --host 0.0.0.0 --port ${MEDIA_SERVICE_PORT}
+    ports:
+      - "${MEDIA_SERVICE_PORT}:${MEDIA_SERVICE_PORT}"
+    depends_on:
+      - localstack
+    env_file:
+      - .env
+    volumes:
+      - ../media-service:/app
+
+  # === Notification service ===
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-service
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+    command: >
+      uvicorn api.main:app --host 0.0.0.0 --port ${NOTIFICATION_SERVICE_PORT}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
+    depends_on:
+      - localstack
+    env_file:
+      - .env
+    volumes:
+      - ../notification-service:/app
+
+volumes:
+  postgres_data:
+
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
+#      interval: 5s
+#      timeout: 2s
+#      retries: 10
+
+  # === API Gateway ===
+#  api-gateway:
+#    image: api-gateway:latest
+#    container_name: api-gateway
+#    build:
+#      context: ../api-gateway
+#      dockerfile: Dockerfile
+#    command: >
+#      uvicorn api.main:app --host 0.0.0.0 --port ${API_GATEWAY_PORT}
+#    ports:
+#      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
+#    depends_on:
+#      - chat-service
+#      - media-service
+#      - notification-service
+#    env_file:
+#      - .env
+#    volumes:
+#      - ../api-gateway:/app
+
+#  frontend:
+#    image: frontend
+#    container_name: frontend
+#    build:
+#      context: ../frontend
+#      dockerfile: Dockerfile
+#    ports:
+#      - "4200:80"
+#    env_file:
+#      - .env
+#    environment:
+#      BACKEND_HOST: "${BACKEND_HOST}"
+#      BACKEND_PORT: "${BACKEND_PORT}"
+#    depends_on:
+#      - backend
