@@ -92,7 +92,7 @@ async def test_send_notification_invalid_email_format():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.post("/api/notifications/send", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -185,7 +185,7 @@ async def test_send_notification_max_length_email():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.post("/api/notifications/send", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

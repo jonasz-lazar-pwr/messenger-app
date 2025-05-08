@@ -1,4 +1,4 @@
-# tests/chat-service/run_all_chat_tests.py
+# tests/chat-service/run_chat_tests.py
 
 import pytest
 import sys

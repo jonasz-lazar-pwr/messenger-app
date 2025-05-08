@@ -1,4 +1,4 @@
-# tests/notification-service/run_all_notification_tests.py
+# tests/notification-service/run_notification_tests.py
 
 import pytest
 import sys
