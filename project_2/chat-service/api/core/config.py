@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     PSQL_USER: str
     PSQL_PASSWORD: str
     PSQL_NAME: str
+    NOTIFICATION_SERVICE_HOST: str
+    NOTIFICATION_SERVICE_PORT: int
+    NOTIFICATION_RECEIVER_EMAIL: str
+    MEDIA_SERVICE_HOST: str
+    MEDIA_SERVICE_PORT: int
 
     model_config = SettingsConfigDict(
         env_file=".env",

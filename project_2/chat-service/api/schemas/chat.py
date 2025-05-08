@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 
+
 class ChatParticipant(BaseModel):
     """Basic information about the other participant in a chat."""
     first_name: str = Field(..., description="First name of the participant")
@@ -9,6 +10,7 @@ class ChatParticipant(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class ChatListItem(BaseModel):
     """Schema representing a single chat entry in the user's chat list."""
