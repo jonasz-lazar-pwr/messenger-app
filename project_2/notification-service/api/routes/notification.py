@@ -1,5 +1,11 @@
 # api/routes/notification.py
 
+"""
+Notification routes for sending notifications.
+
+Exposes endpoints to handle notification publishing and metadata storage.
+"""
+
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from uuid import uuid4
@@ -7,7 +13,9 @@ from api.schemas.notification_item import SendNotificationIn, NotificationOut
 from api.services.sns import send_notification_to_sns
 from api.services.dynamo import save_notification
 
+# Create a router instance for notification-related routes
 router = APIRouter()
+
 
 @router.post(
     "/send",
@@ -21,39 +29,41 @@ router = APIRouter()
 )
 async def send_notification(payload: SendNotificationIn):
     """
-    Send a notification to a user via email and store the notification in DynamoDB.
+    Send a notification to a user via email and store the notification metadata in DynamoDB.
 
-    Workflow:
-    1. Generate a unique `notification_id` (UUID4) and current UTC timestamp.
-    2. Publish the notification message to the SNS topic (email-based notification).
-    3. Save the notification details to the DynamoDB table (`Notifications`).
+    Process:
+    - Generates a unique notification ID (UUID4) and captures the current UTC timestamp.
+    - Publishes the notification message to the SNS topic.
+    - Saves the notification metadata (ID, email, message, timestamp) to the DynamoDB table.
 
     Args:
-        payload (SendNotificationIn): The notification input payload containing `user_email` and `message`.
+        payload (SendNotificationIn): The input payload containing `user_email` and `message`.
 
     Returns:
-        NotificationOut: The full notification metadata (ID, email, message, timestamp).
+        NotificationOut: Full metadata of the sent notification (notification_id, user_email, message, sent_at).
 
     Raises:
-        HTTPException: If SNS publishing or DynamoDB saving fails.
+        HTTPException:
+            - 500 Internal Server Error if sending the notification fails.
+            - 500 Internal Server Error if saving the metadata to DynamoDB fails.
     """
-    # 1. Generate notification ID and timestamp
+    # Generate a unique notification ID and timestamp
     notification_id = str(uuid4())
     sent_at = datetime.utcnow().isoformat()
 
-    # 2. Publish to SNS
+    # Attempt to send the notification via SNS
     try:
-        sns_response = send_notification_to_sns(payload.user_email, payload.message)
+        sns_response = send_notification_to_sns(str(payload.user_email), payload.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
 
-    # 3. Save to DynamoDB
+    # Attempt to save the notification metadata to DynamoDB
     try:
-        await save_notification(notification_id, payload.user_email, payload.message, sent_at)
+        await save_notification(notification_id, str(payload.user_email), payload.message, sent_at)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save notification: {str(e)}")
 
-    # 4. Return response
+    # Return the full notification metadata
     return NotificationOut(
         notification_id=notification_id,
         user_email=payload.user_email,
