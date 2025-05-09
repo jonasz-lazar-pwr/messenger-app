@@ -54,6 +54,6 @@ add_middleware(app)
 
 # Mount routers for different parts of the API
 app.include_router(health.router, prefix="/healthz")
-app.include_router(message.router, prefix="/api/messages")
-app.include_router(chat.router, prefix="/api/chats")
-app.include_router(user.router, prefix="/api/users")
+app.include_router(message.router, prefix="/messages")
+app.include_router(chat.router, prefix="/chats")
+app.include_router(user.router, prefix="/users")

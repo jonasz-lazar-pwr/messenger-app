@@ -3,7 +3,8 @@
 import pytest
 import httpx
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
+
 
 @pytest.mark.asyncio
 async def test_user_search_exact_match():
@@ -19,6 +20,7 @@ async def test_user_search_exact_match():
     assert isinstance(data, list)
     assert all("first_name" in u and "last_name" in u and "sub" in u for u in data)
 
+
 @pytest.mark.asyncio
 async def test_user_search_partial_match():
     """
@@ -32,6 +34,7 @@ async def test_user_search_partial_match():
     data = response.json()
     assert isinstance(data, list)
 
+
 @pytest.mark.asyncio
 async def test_user_search_case_insensitive():
     """
@@ -43,6 +46,7 @@ async def test_user_search_case_insensitive():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
+
 
 @pytest.mark.asyncio
 async def test_user_search_no_results():
@@ -56,6 +60,7 @@ async def test_user_search_no_results():
     assert response.status_code == 200
     assert response.json() == []
 
+
 @pytest.mark.asyncio
 async def test_user_search_missing_query():
     """
@@ -66,6 +71,7 @@ async def test_user_search_missing_query():
         response = await client.get("/api/users/search")
 
     assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 async def test_user_search_min_length_query():
@@ -91,3 +97,16 @@ async def test_user_search_special_characters():
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
+
+@pytest.mark.asyncio
+async def test_user_search_very_long_query():
+    """
+    Test search with a very long query string.
+    Should return 200 and likely an empty list.
+    """
+    long_query = "A" * 1000
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.get("/api/users/search", params={"query": long_query})
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)

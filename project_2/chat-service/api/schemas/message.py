@@ -23,3 +23,14 @@ class MessageOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class MessageTextIn(BaseModel):
+    chat_id: int = Field(..., description="ID of the chat where the message is sent")
+    sender_sub: str = Field(..., description="Cognito 'sub' of the user who sends the message")
+    content: str = Field(..., description="Text content of the message (must be non-empty)")
+
+
+class MessageMediaIn(BaseModel):
+    chat_id: int = Field(..., description="ID of the chat where the media message is sent")
+    sender_sub: str = Field(..., description="Cognito 'sub' of the user who sends the message")

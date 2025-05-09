@@ -4,7 +4,7 @@ import pytest
 import httpx
 from uuid import uuid4
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 
 
 @pytest.mark.asyncio
@@ -115,6 +115,37 @@ async def test_register_user_long_fields():
         "email": f"long-{uuid4()}@example.com",
         "first_name": long_name,
         "last_name": long_name
+    }
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/api/users/register", json=payload)
+
+    assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_register_user_empty_payload():
+    """
+    Test registering with completely empty payload.
+    Should return 422 Unprocessable Entity.
+    """
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/api/users/register", json={})
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_register_user_with_extra_field():
+    """
+    Test registering with an extra field not defined in schema.
+    Should succeed and ignore the extra field.
+    """
+    payload = {
+        "sub": f"test-sub-extra-{uuid4()}",
+        "email": f"extra-{uuid4()}@example.com",
+        "first_name": "Extra",
+        "last_name": "Field",
+        "unexpected": "this should be ignored"
     }
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.post("/api/users/register", json=payload)

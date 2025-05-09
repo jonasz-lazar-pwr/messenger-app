@@ -3,7 +3,7 @@
 import pytest
 import httpx
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 
 @pytest.mark.asyncio
 async def test_get_messages_valid_chat():

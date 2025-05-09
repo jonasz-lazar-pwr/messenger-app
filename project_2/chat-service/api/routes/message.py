@@ -14,134 +14,147 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Optional
 from api.db.deps import get_db
 from api.models.message import Message
 from api.models.chat import Chat
-from api.schemas.message import MessageOut
+from api.schemas.message import MessageOut, MessageTextIn
 from api.services.notification import send_notification_for_message
 from api.core.config import settings
 from uuid import UUID
+import traceback
 
 # Create a router instance to handle message-related routes
 router = APIRouter()
 
-
 @router.post(
-    "",
+    "/text",
     response_model=MessageOut,
-    summary="Create new message",
-    description=(
-        "Creates a new message in the system. Supports:\n"
-        "- plain text messages,\n"
-        "- media messages (file upload),\n"
-        "- or both together.\n\n"
-        "If a file is uploaded, the chat-service will internally forward the file "
-        "to the media-service for S3 upload and metadata storage."
-    ),
+    summary="Create new text message",
+    description="Creates a new text-only message (no media allowed).",
     responses={
-        200: {"description": "Message created successfully"},
-        400: {"description": "Invalid input data"},
-        500: {"description": "Internal server error while processing the message"}
+        200: {"description": "Text message created successfully"},
+        400: {"description": "Invalid input data (e.g., missing content)"},
+        404: {"description": "Chat not found"},
+        500: {"description": "Unexpected server error"}
     },
     tags=["Messages"]
 )
-async def create_message(
-    chat_id: int = Form(...),
-    sender_sub: str = Form(...),
-    content: Optional[str] = Form(None),
-    media_file: Optional[UploadFile] = File(None),
+async def create_text_message(
+    message_in: MessageTextIn,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Create a new message (text, media, or both).
-
-    This endpoint allows users to send plain text messages, media files (images), or both.
-    If a media file is provided, it is forwarded to the media-service for S3 upload and metadata storage.
+    Creates a **text-only message** in the given chat.
 
     Validation:
-    - Requires at least text or media (cannot be empty).
-    - Only image files are accepted as media (content type must start with 'image/').
-
-    On success, the message is stored in the database, and a notification is triggered.
-
-    Args:
-        chat_id (int): ID of the chat where the message is sent.
-        sender_sub (str): Cognito sub (UUID) of the sender.
-        content (Optional[str]): Optional text content of the message.
-        media_file (Optional[UploadFile]): Optional uploaded file (only images allowed).
-        db (AsyncSession): SQLAlchemy async database session (injected).
-
-    Returns:
-        MessageOut: The created message, serialized using the MessageOut schema.
-
-    Raises:
-        HTTPException:
-            - 400: If both text and media are missing, or if invalid media type.
-            - 404: If the specified chat does not exist.
-            - 500: On unexpected errors (e.g., media upload failure, notification failure).
+    - Requires non-empty `content`.
     """
-    # Ensure that at least text content or a media file is provided
-    if not (content and content.strip()) and not media_file:
-        raise HTTPException(status_code=400, detail="Message must contain text or a media file")
+    if not message_in.content or not message_in.content.strip():
+        raise HTTPException(status_code=400, detail="Message content cannot be empty")
 
-    media_url = None
-    media_id = None
-
-    if media_file:
-        # Validate the media file type (accept only images based on content type)
-        if media_file.content_type is None or not media_file.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail="Only image files are allowed")
-
-        # Prepare multipart/form-data request to the media-service for file upload
-        form_data = {
-            "file": (media_file.filename, media_file.file, media_file.content_type)
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(
-                    f"http://{settings.MEDIA_SERVICE_HOST}:{settings.MEDIA_SERVICE_PORT}/api/media/upload",
-                    files=form_data
-                )
-            response.raise_for_status()
-            media_response = response.json()
-            media_url = media_response["url"]
-            media_id = media_response["id"]
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=400, detail=f"Media upload rejected: {str(e)}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to upload media: {str(e)}")
-
-    # Check if the specified chat exists in the database
-    chat_result = await db.execute(select(Chat).where(Chat.id == chat_id))
+    # Check chat exists
+    chat_result = await db.execute(select(Chat).where(Chat.id == message_in.chat_id))
     chat = chat_result.scalar_one_or_none()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    # Save the new message to the database
     message = Message(
-        chat_id=chat_id,
-        sender_sub=sender_sub,
-        content=content,
-        media_url=media_url,
-        media_id=UUID(media_id) if media_id else None
+        chat_id=message_in.chat_id,
+        sender_sub=message_in.sender_sub,
+        content=message_in.content,
+        media_url=None,
+        media_id=None
     )
 
     db.add(message)
     await db.commit()
     await db.refresh(message)
 
-    # Send notification to participants after the message is saved
+    try:
+        await send_notification_for_message(
+            db=db,
+            sender_sub=message_in.sender_sub,
+            message_content=message_in.content,
+            has_media=False
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload media: {str(e)}")
+
+    return message
+
+
+@router.post(
+    "/media",
+    response_model=MessageOut,
+    summary="Create new media message",
+    description="Creates a new message that contains ONLY media (no text allowed).",
+    responses={
+        200: {"description": "Media message created successfully"},
+        400: {"description": "Invalid input data (e.g., missing media, invalid file type)"},
+        404: {"description": "Chat not found"},
+        500: {"description": "Unexpected server error"}
+    },
+    tags=["Messages"]
+)
+async def create_media_message(
+    chat_id: int = Form(...),
+    sender_sub: str = Form(...),
+    media_file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Creates a media-only message (no text allowed).
+    """
+    if media_file.content_type is None or not media_file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image files are allowed")
+
+    # Upload to media-service
+    form_data = {
+        "file": (media_file.filename, media_file.file, media_file.content_type)
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"http://{settings.MEDIA_SERVICE_HOST}:{settings.MEDIA_SERVICE_PORT}/media/upload",
+                files=form_data
+            )
+        response.raise_for_status()
+        media_response = response.json()
+        media_url = media_response["url"]
+        media_id = media_response["id"]
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=400, detail=f"Media upload rejected: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload media: {str(e)}")
+
+    # Check chat exists
+    chat_result = await db.execute(select(Chat).where(Chat.id == chat_id))
+    chat = chat_result.scalar_one_or_none()
+    if chat is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    message = Message(
+        chat_id=chat_id,
+        sender_sub=sender_sub,
+        content=None,
+        media_url=media_url,
+        media_id=UUID(media_id)
+    )
+
+    db.add(message)
+    await db.commit()
+    await db.refresh(message)
+
     try:
         await send_notification_for_message(
             db=db,
             sender_sub=sender_sub,
-            message_content=content,
-            has_media=bool(media_url)
+            message_content=None,
+            has_media=True
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload media: {str(e)}")
 
     return message
 
