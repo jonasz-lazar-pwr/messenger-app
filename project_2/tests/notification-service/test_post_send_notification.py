@@ -1,17 +1,32 @@
 # tests/notification-service/test_post_send_notification.py
 
+"""
+Integration tests for the /api/notifications/send endpoint of notification-service.
+
+These tests validate various aspects of the notification sending process,
+including success cases, error handling (missing fields, invalid formats),
+and edge cases (large payloads, unicode, duplicate requests).
+
+Endpoint under test:
+    POST /api/notifications/send
+"""
+
 import pytest
 import httpx
-import asyncio
-from uuid import uuid4
+from dateutil.parser import parse
 
-BASE_URL = "http://localhost:8003"
+# Base URL for the notification-service API
+BASE_URL = "http://localhost:8000"
+
 
 @pytest.mark.asyncio
 async def test_send_notification_success():
     """
     Test sending a valid notification.
-    Should return 200 with full notification metadata.
+
+    Expected:
+        - 200 OK
+        - JSON response includes: 'notification_id', 'user_email', 'message', 'sent_at'
     """
     payload = {
         "user_email": "testuser@example.com",
@@ -32,8 +47,10 @@ async def test_send_notification_success():
 @pytest.mark.asyncio
 async def test_send_notification_missing_user_email():
     """
-    Test sending a notification without user_email.
-    Should return 422 (Unprocessable Entity).
+    Test sending a notification without 'user_email'.
+
+    Expected:
+        - 422 Unprocessable Entity (validation error)
     """
     payload = {
         "message": "Notification without email"
@@ -48,8 +65,10 @@ async def test_send_notification_missing_user_email():
 @pytest.mark.asyncio
 async def test_send_notification_missing_message():
     """
-    Test sending a notification without message.
-    Should return 422 (Unprocessable Entity).
+    Test sending a notification without 'message'.
+
+    Expected:
+        - 422 Unprocessable Entity (validation error)
     """
     payload = {
         "user_email": "testuser@example.com"
@@ -65,7 +84,9 @@ async def test_send_notification_missing_message():
 async def test_send_notification_empty_message():
     """
     Test sending a notification with an empty message.
-    Should succeed (if no explicit length validation) or fail with 422 if restricted.
+
+    Expected:
+        - 422 Unprocessable Entity (because of min_length=1 constraint)
     """
     payload = {
         "user_email": "testuser@example.com",
@@ -82,7 +103,9 @@ async def test_send_notification_empty_message():
 async def test_send_notification_invalid_email_format():
     """
     Test sending a notification with invalid email format.
-    Should succeed (no email format validation).
+
+    Expected:
+        - 422 Unprocessable Entity (because of EmailStr field validation)
     """
     payload = {
         "user_email": "invalid-email",
@@ -99,7 +122,9 @@ async def test_send_notification_invalid_email_format():
 async def test_send_notification_very_long_message():
     """
     Test sending a notification with a very long message (10,000+ characters).
-    Should succeed unless length is explicitly limited.
+
+    Expected:
+        - 200 OK (unless length limit is enforced)
     """
     payload = {
         "user_email": "testuser@example.com",
@@ -115,8 +140,10 @@ async def test_send_notification_very_long_message():
 @pytest.mark.asyncio
 async def test_send_notification_with_long_email():
     """
-    Test sending a notification with a long email address (max length 255).
-    Should succeed unless there's an explicit length validation.
+    Test sending a notification with a long email address (close to max length 255).
+
+    Expected:
+        - 200 OK (if within allowed limit and valid format)
     """
     long_email = f"{'a'*64}@{'b'*63}.{'c'*63}.{'d'*61}"
     payload = {
@@ -133,8 +160,10 @@ async def test_send_notification_with_long_email():
 @pytest.mark.asyncio
 async def test_send_notification_with_unicode_message():
     """
-    Test sending a notification with unicode characters (emoji, symbols).
-    Should succeed.
+    Test sending a notification with unicode characters (emoji, accents).
+
+    Expected:
+        - 200 OK
     """
     payload = {
         "user_email": "testuser@example.com",
@@ -150,7 +179,11 @@ async def test_send_notification_with_unicode_message():
 @pytest.mark.asyncio
 async def test_send_notification_duplicate_payloads():
     """
-    Test sending the same payload multiple times to ensure uniqueness of notification IDs.
+    Test sending the same payload multiple times to ensure unique notification IDs.
+
+    Expected:
+        - 200 OK both times
+        - Different 'notification_id' in each response
     """
     payload = {
         "user_email": "testuser@example.com",
@@ -171,10 +204,13 @@ async def test_send_notification_duplicate_payloads():
 @pytest.mark.asyncio
 async def test_send_notification_max_length_email():
     """
-    Test sending a notification with an email address near the maximum length (320 characters).
+    Test sending a notification with an email at/near 320 characters (max allowed by spec).
+
+    Expected:
+        - 422 Unprocessable Entity (should fail EmailStr validation)
     """
     local_part = 'a' * 64
-    domain = 'b' * 186 + ".com"  # 64 + 1 + 186 + 4 = 255 max for full email
+    domain = 'b' * 186 + ".com"  # ~255 chars full domain
 
     email = f"{local_part}@{domain}"
     payload = {
@@ -192,6 +228,9 @@ async def test_send_notification_max_length_email():
 async def test_send_notification_large_payload():
     """
     Test sending a notification with both large email and large message.
+
+    Expected:
+        - 200 OK (if valid and within size limits)
     """
     email = f"{'x'*64}@{'y'*63}.{'z'*63}.{'w'*61}"
     message = "B" * 20000
@@ -211,14 +250,42 @@ async def test_send_notification_large_payload():
 async def test_send_notification_invalid_types():
     """
     Test sending notification with invalid types (int instead of string).
-    Should return 422.
+
+    Expected:
+        - 422 Unprocessable Entity
     """
     payload = {
-        "user_email": 12345,
-        "message": {"text": "Invalid type"}
+        "user_email": 12345,  # should be string (email)
+        "message": {"text": "Invalid type"}  # should be string
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.post("/api/notifications/send", json=payload)
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_send_notification_sent_at_is_timestamp():
+    """
+    Test that the 'sent_at' field in the response is a valid ISO timestamp.
+
+    Expected:
+        - 200 OK
+        - sent_at can be parsed to datetime without error
+    """
+    payload = {
+        "user_email": "testuser@example.com",
+        "message": "Timestamp test"
+    }
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/api/notifications/send", json=payload)
+
+    assert response.status_code == 200
+    data = response.json()
+    # Validate that sent_at is a valid timestamp
+    try:
+        parsed_date = parse(data["sent_at"])
+        assert parsed_date is not None
+    except Exception:
+        pytest.fail("sent_at is not a valid timestamp")

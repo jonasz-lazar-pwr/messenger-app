@@ -45,4 +45,4 @@ add_middleware(app)
 
 # Mount route modules under specified prefixes
 app.include_router(health.router, prefix="/healthz")
-app.include_router(media.router, prefix="/api/media")
+app.include_router(media.router, prefix="/media")

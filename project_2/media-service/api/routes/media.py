@@ -10,7 +10,7 @@ including S3 upload and metadata persistence in DynamoDB.
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from api.services.s3 import upload_file_to_s3
 from api.services.dynamo import save_media_metadata
-from api.schemas.media_item import MediaUploadResponse
+from api.schemas.media import MediaUploadResponse
 
 # Create router instance for media routes
 router = APIRouter()

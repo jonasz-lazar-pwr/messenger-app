@@ -9,7 +9,7 @@ Exposes endpoints to handle notification publishing and metadata storage.
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from uuid import uuid4
-from api.schemas.notification_item import SendNotificationIn, NotificationOut
+from api.schemas.notification import SendNotificationIn, NotificationOut
 from api.services.sns import send_notification_to_sns
 from api.services.dynamo import save_notification
 

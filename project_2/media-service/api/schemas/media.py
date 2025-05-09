@@ -1,4 +1,4 @@
-# api/schemas/media_item.py
+# api/schemas/media.py
 
 from pydantic import BaseModel, Field
 

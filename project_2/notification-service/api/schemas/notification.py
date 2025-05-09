@@ -1,4 +1,4 @@
-# api/schemas/notification_item.py
+# api/schemas/notification.py
 
 from pydantic import BaseModel, Field, constr, EmailStr
 from datetime import datetime

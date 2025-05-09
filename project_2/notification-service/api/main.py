@@ -37,4 +37,4 @@ add_middleware(app)
 
 # Mount routers for different parts of the API
 app.include_router(health.router, prefix="/healthz")
-app.include_router(notification.router, prefix="/api/notifications")
+app.include_router(notification.router, prefix="/notifications")
