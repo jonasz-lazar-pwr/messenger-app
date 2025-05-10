@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     COGNITO_POOL_ID: str
     COGNITO_CLIENT_ID: str
 
+    CORS_ALLOW_ORIGINS: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="allow"

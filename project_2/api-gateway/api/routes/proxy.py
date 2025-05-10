@@ -1,25 +1,31 @@
 # api/routes/proxy.py
 
 import httpx
-from fastapi import APIRouter, Request, HTTPException, Response
+import json
+from fastapi import APIRouter, Request, HTTPException, Response, Depends
+from fastapi.security import HTTPAuthorizationCredentials
+from api.core.auth import CognitoJWTBearer
 from api.core.config import settings
+
+jwt_bearer = CognitoJWTBearer(
+    pool_id=settings.COGNITO_POOL_ID,
+    client_id=settings.COGNITO_CLIENT_ID,
+    issuer_url=settings.COGNITO_ISSUER_URL,
+)
 
 router = APIRouter()
 
-
 @router.api_route(
     "/{full_path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     summary="Proxy endpoint",
-    description="Proxies the request to the appropriate microservice based on the path.",
-    # dependencies=[Depends(JWTBearer())]
+    description="Proxies the request to the appropriate microservice based on the path."
 )
-async def proxy(full_path: str, request: Request):
-    """
-    Forwards incoming requests to the corresponding microservice.
-    - Matches path prefixes to determine the destination service.
-    - Supports all HTTP methods (GET, POST, PUT, DELETE, PATCH).
-    """
+async def proxy(
+    full_path: str,
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(jwt_bearer)
+):
     # 1. Determine microservice based on the path
     if full_path.startswith(("messages", "chats", "users")):
         service_host = settings.CHAT_SERVICE_HOST
@@ -41,10 +47,18 @@ async def proxy(full_path: str, request: Request):
     headers = dict(request.headers)
     query_params = request.query_params
 
-    # Body: stream it to handle JSON/multipart/form etc.
+    # Inject token payload as custom header
+    token = credentials.credentials
+    token_payload = jwt_bearer.get_verified_payload(token)
+    headers["X-User-Payload"] = json.dumps(token_payload)
+
+    # Optional: decide whether to keep forwarding the Authorization header
+    # headers["Authorization"] = f"Bearer {credentials.credentials}"
+
+    # 4. Body: stream it to handle JSON/multipart/form etc.
     body = await request.body()
 
-    # 4. Forward the request
+    # 5. Forward the request
     async with httpx.AsyncClient() as client:
         try:
             proxy_response = await client.request(
@@ -58,10 +72,10 @@ async def proxy(full_path: str, request: Request):
         except httpx.RequestError as e:
             raise HTTPException(status_code=502, detail=f"Error contacting service: {str(e)}")
 
-    # 5. Return the response 1:1
+    # 6. Return the response 1:1, but avoid double compression issues
     return Response(
         content=proxy_response.content,
         status_code=proxy_response.status_code,
-        headers=dict(proxy_response.headers),
+        headers={key: value for key, value in proxy_response.headers.items() if key.lower() != "content-encoding"},
         media_type=proxy_response.headers.get("content-type")
     )

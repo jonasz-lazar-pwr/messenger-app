@@ -23,7 +23,7 @@ app = FastAPI(
 )
 
 # Apply global middleware (e.g., CORS)
-# add_middleware(app)
+add_middleware(app)
 
 # Mount routers
 app.include_router(health.router, prefix="/healthz")
