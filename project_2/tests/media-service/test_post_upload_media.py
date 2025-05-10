@@ -1,23 +1,12 @@
 # tests/chat-service/test_post_upload_media.py
 
-"""
-Integration tests for the /api/media/upload endpoint of media-service.
-
-These tests validate the behavior of the media file upload endpoint,
-including success cases, edge cases (large files, empty files),
-and failure scenarios (unsupported types, missing files).
-
-Endpoint under test:
-    POST /api/media/upload
-"""
-
 import pytest
 import httpx
 from pathlib import Path
 import io
 
 # Base URL for the media-service API (adjust port if needed)
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8002"
 
 # Paths to test assets (relative to the tests/ directory)
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
@@ -42,7 +31,7 @@ async def test_upload_image():
             "file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("api/media/upload", files=files)
+            response = await client.post("/media/upload", files=files)
 
     assert response.status_code == 200
     data = response.json()
@@ -61,7 +50,7 @@ async def test_upload_missing_file():
         - 422 Unprocessable Entity (FastAPI validation error)
     """
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("api/media/upload", files={})
+        response = await client.post("/media/upload", files={})
 
     assert response.status_code == 422
 
@@ -82,7 +71,7 @@ async def test_upload_unsupported_file_type():
             "file": (TEST_TEXT_PATH.name, text_file, "text/plain")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("api/media/upload", files=files)
+            response = await client.post("/media/upload", files=files)
 
     assert response.status_code in (400, 415)
 
@@ -102,7 +91,7 @@ async def test_upload_large_image():
             "file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("api/media/upload", files=files)
+            response = await client.post("/media/upload", files=files)
 
     assert response.status_code == 200
 
@@ -121,7 +110,7 @@ async def test_upload_really_large_image():
         "file": ("large_image.jpg", big_file, "image/jpeg")
     }
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("api/media/upload", files=files)
+        response = await client.post("/media/upload", files=files)
 
     assert response.status_code in (200, 413)
 
@@ -139,6 +128,6 @@ async def test_upload_empty_file():
         "file": ("empty.jpg", empty_file, "image/jpeg")
     }
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("api/media/upload", files=files)
+        response = await client.post("/media/upload", files=files)
 
     assert response.status_code == 200

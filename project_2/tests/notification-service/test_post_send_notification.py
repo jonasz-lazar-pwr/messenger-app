@@ -1,22 +1,11 @@
 # tests/notification-service/test_post_send_notification.py
 
-"""
-Integration tests for the /api/notifications/send endpoint of notification-service.
-
-These tests validate various aspects of the notification sending process,
-including success cases, error handling (missing fields, invalid formats),
-and edge cases (large payloads, unicode, duplicate requests).
-
-Endpoint under test:
-    POST /api/notifications/send
-"""
-
 import pytest
 import httpx
 from dateutil.parser import parse
 
 # Base URL for the notification-service API
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8003"
 
 
 @pytest.mark.asyncio
@@ -34,7 +23,7 @@ async def test_send_notification_success():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
     data = response.json()
@@ -57,7 +46,7 @@ async def test_send_notification_missing_user_email():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -75,7 +64,7 @@ async def test_send_notification_missing_message():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -94,7 +83,7 @@ async def test_send_notification_empty_message():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -113,7 +102,7 @@ async def test_send_notification_invalid_email_format():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -132,7 +121,7 @@ async def test_send_notification_very_long_message():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
 
@@ -152,7 +141,7 @@ async def test_send_notification_with_long_email():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
 
@@ -171,7 +160,7 @@ async def test_send_notification_with_unicode_message():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
 
@@ -191,8 +180,8 @@ async def test_send_notification_duplicate_payloads():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response1 = await client.post("/api/notifications/send", json=payload)
-        response2 = await client.post("/api/notifications/send", json=payload)
+        response1 = await client.post("/notifications/send", json=payload)
+        response2 = await client.post("/notifications/send", json=payload)
 
     assert response1.status_code == 200
     assert response2.status_code == 200
@@ -219,7 +208,7 @@ async def test_send_notification_max_length_email():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -241,7 +230,7 @@ async def test_send_notification_large_payload():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
 
@@ -260,7 +249,7 @@ async def test_send_notification_invalid_types():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 422
 
@@ -279,7 +268,7 @@ async def test_send_notification_sent_at_is_timestamp():
         "message": "Timestamp test"
     }
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/notifications/send", json=payload)
+        response = await client.post("/notifications/send", json=payload)
 
     assert response.status_code == 200
     data = response.json()
