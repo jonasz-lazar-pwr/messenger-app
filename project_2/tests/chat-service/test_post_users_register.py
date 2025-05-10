@@ -2,9 +2,10 @@
 
 import pytest
 import httpx
+import json
 from uuid import uuid4
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8001"
 
 
 @pytest.mark.asyncio
@@ -16,11 +17,15 @@ async def test_register_user_success():
     payload = {
         "sub": f"test-sub-new-{uuid4()}",
         "email": f"newuser-{uuid4()}@example.com",
-        "first_name": "Alice",
-        "last_name": "Wonder"
+        "given_name": "Alice",
+        "family_name": "Wonder"
     }
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
+
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+        response = await client.post("/users/register", headers=headers)
 
     assert response.status_code == 201
     data = response.json()
@@ -34,17 +39,20 @@ async def test_register_user_already_exists():
     Should return 204 No Content.
     """
     payload = {
-        "sub": "test-sub-new-2",
-        "email": "newuser2@example.com",
-        "first_name": "Bob",
-        "last_name": "Builder"
+        "sub": f"test-sub-existing-{uuid4()}",
+        "email": f"existing-{uuid4()}@example.com",
+        "given_name": "Bob",
+        "family_name": "Builder"
+    }
+    headers = {
+        "X-User-Payload": json.dumps(payload)
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         # First registration
-        await client.post("/api/users/register", json=payload)
+        await client.post("/users/register", headers=headers)
         # Second registration (should hit "already exists")
-        response = await client.post("/api/users/register", json=payload)
+        response = await client.post("/users/register", headers=headers)
 
     assert response.status_code == 204
 
@@ -52,35 +60,53 @@ async def test_register_user_already_exists():
 @pytest.mark.asyncio
 async def test_register_user_missing_fields():
     """
-    Test registering with missing required fields.
-    Should return 422 Unprocessable Entity.
+    Test registering with missing required fields in X-User-Payload.
+    Should return 400 Bad Request.
     """
     payload = {
-        "sub": "test-sub-missing",
-        "email": "missing@example.com",
-        "first_name": "Missing"
-        # last_name is missing
+        "sub": f"test-sub-missing-{uuid4()}",
+        "email": f"missing-{uuid4()}@example.com",
+        # 'given_name' is missing
+        "family_name": "Missing"
     }
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
 
-    assert response.status_code == 422
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/users/register", headers=headers)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == "Missing required user attributes in token payload"
 
 
 @pytest.mark.asyncio
-async def test_register_user_invalid_email():
+async def test_register_user_invalid_json_in_header():
     """
-    Test registering with an invalid email format.
-    Should return 422.
+    Test registering with invalid JSON in X-User-Payload header.
+    Should return 400 Bad Request.
     """
-    payload = {
-        "sub": "test-sub-invalid-email",
-        "email": "invalid-email",
-        "first_name": "Invalid",
-        "last_name": "Email"
+    headers = {
+        "X-User-Payload": "not-a-json-string"
     }
+
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+        response = await client.post("/users/register", headers=headers)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == "Invalid JSON in X-User-Payload header"
+
+
+@pytest.mark.asyncio
+async def test_register_user_missing_header():
+    """
+    Test registering without the X-User-Payload header.
+    Should return 422 Unprocessable Entity (missing header).
+    """
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/users/register")
 
     assert response.status_code == 422
 
@@ -88,66 +114,96 @@ async def test_register_user_invalid_email():
 @pytest.mark.asyncio
 async def test_register_user_empty_strings():
     """
-    Test registering with empty string fields.
-    Should succeed unless you have min_length validation.
+    Test registering a user where required fields are present but empty strings.
+    Should return 400 Bad Request.
     """
     payload = {
         "sub": f"test-sub-empty-{uuid4()}",
         "email": f"empty-{uuid4()}@example.com",
-        "first_name": "",
-        "last_name": ""
+        "given_name": "",
+        "family_name": ""
     }
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
 
-    assert response.status_code == 201
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/users/register", headers=headers)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == "Missing required user attributes in token payload"
 
 
 @pytest.mark.asyncio
-async def test_register_user_long_fields():
+async def test_register_user_very_long_fields():
     """
-    Test registering with very long field values.
-    Should succeed unless length is restricted.
+    Test registering with very long strings in the payload.
+    Should succeed unless you have length restrictions.
     """
-    long_name = "A" * 255
+    long_name = "A" * 500
     payload = {
         "sub": f"test-sub-long-{uuid4()}",
         "email": f"long-{uuid4()}@example.com",
-        "first_name": long_name,
-        "last_name": long_name
+        "given_name": long_name,
+        "family_name": long_name
     }
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
+
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+        response = await client.post("/users/register", headers=headers)
 
     assert response.status_code == 201
+    data = response.json()
+    assert data["message"] == "User created successfully"
 
 
 @pytest.mark.asyncio
-async def test_register_user_empty_payload():
+async def test_register_user_with_extra_fields():
     """
-    Test registering with completely empty payload.
-    Should return 422 Unprocessable Entity.
-    """
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json={})
-
-    assert response.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_register_user_with_extra_field():
-    """
-    Test registering with an extra field not defined in schema.
-    Should succeed and ignore the extra field.
+    Test registering with extra fields in the payload.
+    Should succeed and ignore extra fields.
     """
     payload = {
         "sub": f"test-sub-extra-{uuid4()}",
         "email": f"extra-{uuid4()}@example.com",
-        "first_name": "Extra",
-        "last_name": "Field",
-        "unexpected": "this should be ignored"
+        "given_name": "Extra",
+        "family_name": "Field",
+        "unexpected": "some-extra-value",
+        "role": "admin"  # simulating extra claim
     }
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
+
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/users/register", json=payload)
+        response = await client.post("/users/register", headers=headers)
 
     assert response.status_code == 201
+    data = response.json()
+    assert data["message"] == "User created successfully"
+
+
+@pytest.mark.asyncio
+async def test_register_user_missing_sub():
+    """
+    Test registering without 'sub' field in the payload.
+    Should return 400 Bad Request.
+    """
+    payload = {
+        "email": f"nosub-{uuid4()}@example.com",
+        "given_name": "NoSub",
+        "family_name": "User"
+    }
+    headers = {
+        "X-User-Payload": json.dumps(payload)
+    }
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/users/register", headers=headers)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == "Missing required user attributes in token payload"

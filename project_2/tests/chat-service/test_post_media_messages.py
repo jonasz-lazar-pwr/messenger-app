@@ -1,25 +1,20 @@
 # tests/chat-service/test_post_media_messages.py
 
-"""Integration tests for the /messages/media endpoint of chat-service.
-
-These tests validate the behavior of the media-only message creation endpoint,
-ensuring it correctly handles valid image uploads and various invalid cases.
-
-Endpoint under test:
-    POST /api/messages/media
-"""
-
 import pytest
 import httpx
 from pathlib import Path
+import json
 
-# Base URL for chat-service (adjust if needed)
-BASE_URL = "http://localhost:8000"
+# Base URL for chat-service
+BASE_URL = "http://localhost:8001"
 
 # Paths to test assets (relative to the tests/ directory)
 ASSETS_DIR = Path(__file__).parent.parent / "assets"
 TEST_IMAGE_PATH = ASSETS_DIR / "test.jpg"
 TEST_TEXT_PATH = ASSETS_DIR / "test.txt"
+
+# Mock JWT payload (same across tests)
+X_USER_PAYLOAD = json.dumps({"sub": "test-sub-123"})
 
 
 @pytest.mark.asyncio
@@ -27,7 +22,8 @@ async def test_message_with_only_media():
     """Test creating a valid media-only message.
 
     Sends a multipart/form-data request with a valid image file
-    and required form fields (`chat_id`, `sender_sub`).
+    and required form field (`chat_id`). The sender is provided
+    via the X-User-Payload header.
 
     Expected:
         - 200 OK
@@ -35,8 +31,7 @@ async def test_message_with_only_media():
         - `content` is None
     """
     data = {
-        "chat_id": (None, "1"),
-        "sender_sub": (None, "test-sub-123")
+        "chat_id": (None, "1")
     }
 
     with open(TEST_IMAGE_PATH, "rb") as image_file:
@@ -45,7 +40,11 @@ async def test_message_with_only_media():
             "media_file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("/api/messages/media", files=files)
+            response = await client.post(
+                "/messages/media",
+                files=files,
+                headers={"X-User-Payload": X_USER_PAYLOAD}
+            )
 
     assert response.status_code == 200
     data_out = response.json()
@@ -64,13 +63,15 @@ async def test_missing_media_file_should_fail():
         - 422 Unprocessable Entity (missing required file)
     """
     data = {
-        "chat_id": (None, "1"),
-        "sender_sub": (None, "test-sub-123")
+        "chat_id": (None, "1")
     }
 
-    # No media_file provided
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/api/messages/media", files=data)
+        response = await client.post(
+            "/messages/media",
+            files=data,
+            headers={"X-User-Payload": X_USER_PAYLOAD}
+        )
 
     assert response.status_code == 422
 
@@ -86,8 +87,7 @@ async def test_invalid_media_file_type_should_fail():
         - 400 Bad Request (invalid media type)
     """
     data = {
-        "chat_id": (None, "1"),
-        "sender_sub": (None, "test-sub-123")
+        "chat_id": (None, "1")
     }
 
     with open(TEST_TEXT_PATH, "rb") as text_file:
@@ -96,7 +96,11 @@ async def test_invalid_media_file_type_should_fail():
             "media_file": (TEST_TEXT_PATH.name, text_file, "text/plain")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("/api/messages/media", files=files)
+            response = await client.post(
+                "/messages/media",
+                files=files,
+                headers={"X-User-Payload": X_USER_PAYLOAD}
+            )
 
     assert response.status_code == 400
 
@@ -109,8 +113,7 @@ async def test_nonexistent_chat_id_should_fail_media():
         - 404 Not Found
     """
     data = {
-        "chat_id": (None, "9999"),
-        "sender_sub": (None, "test-sub-123")
+        "chat_id": (None, "9999")
     }
 
     with open(TEST_IMAGE_PATH, "rb") as image_file:
@@ -119,7 +122,11 @@ async def test_nonexistent_chat_id_should_fail_media():
             "media_file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("/api/messages/media", files=files)
+            response = await client.post(
+                "/messages/media",
+                files=files,
+                headers={"X-User-Payload": X_USER_PAYLOAD}
+            )
 
     assert response.status_code == 404
 
@@ -131,8 +138,29 @@ async def test_missing_chat_id_should_fail_media():
     Expected:
         - 422 Unprocessable Entity
     """
+    with open(TEST_IMAGE_PATH, "rb") as image_file:
+        files = {
+            "media_file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
+        }
+        async with httpx.AsyncClient(base_url=BASE_URL) as client:
+            response = await client.post(
+                "/messages/media",
+                files=files,
+                headers={"X-User-Payload": X_USER_PAYLOAD}
+            )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_missing_token_header_should_fail():
+    """Test creating a media message without the X-User-Payload header.
+
+    Expected:
+        - 422 Unprocessable Entity (missing header)
+    """
     data = {
-        "sender_sub": (None, "test-sub-123")
+        "chat_id": (None, "1")
     }
 
     with open(TEST_IMAGE_PATH, "rb") as image_file:
@@ -141,6 +169,10 @@ async def test_missing_chat_id_should_fail_media():
             "media_file": (TEST_IMAGE_PATH.name, image_file, "image/jpeg")
         }
         async with httpx.AsyncClient(base_url=BASE_URL) as client:
-            response = await client.post("/api/messages/media", files=files)
+            response = await client.post(
+                "/messages/media",
+                files=files
+                # Note: No X-User-Payload header!
+            )
 
     assert response.status_code == 422

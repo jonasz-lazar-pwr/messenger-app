@@ -1,18 +1,17 @@
 # api/routes/chat.py
 
 """
-Routes for chat-related operations.
-
-This module provides an endpoint to retrieve all chats for a specific user,
+This module provides an endpoint to retrieve all chats for the authenticated user,
 returning minimal chat info along with the other participant's details.
 
 Endpoints:
-- GET /api/chats: Retrieve all chats for a given user_sub (query param).
+- GET /chats: Retrieve all chats for the authenticated user (using X-User-Payload header).
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy import select
 from api.db.deps import get_db
 from api.models.chat import Chat
 from api.models.user import User
@@ -26,49 +25,56 @@ router = APIRouter()
     "",
     response_model=list[ChatListItem],
     summary="Get user chats",
-    description="Returns all chats for a given user_sub as query param."
+    description=(
+        "Returns all chats for the authenticated user based on the JWT payload "
+        "passed via the X-User-Payload header."
+    ),
+    responses={
+        200: {"description": "List of user chats"},
+        400: {"description": "Invalid token payload"},
+        422: {"description": "Missing X-User-Payload header"},
+    }
 )
-async def get_user_chats(user_sub: str, db: AsyncSession = Depends(get_db)):
+async def get_user_chats(
+    x_user_payload: str = Header(..., alias="X-User-Payload"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Retrieve all chats for a specific user.
+    Retrieve all chats for the authenticated user.
 
-    This endpoint fetches all chats where the user participates (either as user1 or user2),
+    This endpoint fetches all chats where the authenticated user participates (either as user1 or user2),
     and for each chat, it includes the basic details of the other participant.
 
+    The current user is identified from the `X-User-Payload` header, which must contain a JSON string
+    with at least the 'sub' field.
+
     Args:
-        user_sub (str): Cognito sub (UUID) of the user for whom to retrieve chats.
-        db (AsyncSession): SQLAlchemy async database session (injected).
+        x_user_payload (str): A JSON string provided via the X-User-Payload header,
+            containing user identity attributes from the validated token.
+        db (AsyncSession): The asynchronous database session (injected).
 
     Returns:
         list[ChatListItem]: List of chats with minimal information (chat ID and participant's name).
 
-    Example response:
-    ```json
-    [
-        {
-            "id": 1,
-            "participant": {
-                "first_name": "Alice",
-                "last_name": "Wonder"
-            }
-        },
-        {
-            "id": 2,
-            "participant": {
-                "first_name": "Bob",
-                "last_name": "Builder"
-            }
-        }
-    ]
-    ```
-
-    Notes:
-    - If the user is in no chats, an empty list is returned.
-    - Only chats where both participants exist in the database are included in the response.
+    Raises:
+        HTTPException: 400 if the token payload is invalid or missing required fields.
+        HTTPException: 422 if the X-User-Payload header is missing.
     """
-    # Query for chats where the user participates as user1 or user2
+    # Parse token payload to extract current user's sub
+    try:
+        payload = json.loads(x_user_payload)
+        current_user_sub = payload.get("sub")
+    except (json.JSONDecodeError, AttributeError):
+        raise HTTPException(status_code=400, detail="Invalid X-User-Payload header")
+
+    if not current_user_sub:
+        raise HTTPException(status_code=400, detail="Missing 'sub' in token payload")
+
+    # Query for chats where the current user is a participant
     result = await db.execute(
-        select(Chat).where((Chat.user1_sub == user_sub) | (Chat.user2_sub == user_sub))
+        select(Chat).where(
+            (Chat.user1_sub == current_user_sub) | (Chat.user2_sub == current_user_sub)
+        )
     )
     chats = result.scalars().all()
 
@@ -76,7 +82,7 @@ async def get_user_chats(user_sub: str, db: AsyncSession = Depends(get_db)):
 
     # For each chat, determine the other participant and fetch their details
     for chat in chats:
-        other_user_sub = chat.user2_sub if chat.user1_sub == user_sub else chat.user1_sub
+        other_user_sub = chat.user2_sub if chat.user1_sub == current_user_sub else chat.user1_sub
         user_result = await db.execute(select(User).where(User.sub == other_user_sub))
         other_user = user_result.scalar_one_or_none()
 
