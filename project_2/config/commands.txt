@@ -1,3 +1,4 @@
+docker-compose build --no-cache
 docker-compose up --build -d
 docker-compose down -v
 docker-compose exec chat-service sh -c "PYTHONPATH=/app python api/db/init_db.py"
@@ -15,6 +16,10 @@ aws dynamodb scan \
   --endpoint-url=http://localhost:4566 \
   --output json | jq
 
+aws dynamodb scan \
+  --table-name Notifications \
+  --endpoint-url=http://localhost:4566 \
+  --output json | jq
 
 aws sns list-topics --endpoint-url=http://localhost:4566
 

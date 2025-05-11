@@ -31,6 +31,40 @@ services:
       - .env
     restart: unless-stopped
 
+  # === Frontend ===
+  frontend:
+    image: frontend:latest
+    container_name: frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_CONTAINER_PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - api-gateway
+
+  # === API Gateway ===
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    command: >
+      uvicorn api.main:app --host 0.0.0.0 --port ${API_PORT}
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    depends_on:
+      - chat-service
+      - media-service
+      - notification-service
+    env_file:
+      - .env
+    volumes:
+      - ../api-gateway:/app
+
   # === Chat service ===
   chat-service:
     image: chat-service:latest
@@ -87,45 +121,3 @@ services:
 
 volumes:
   postgres_data:
-
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
-#      interval: 5s
-#      timeout: 2s
-#      retries: 10
-
-  # === API Gateway ===
-#  api-gateway:
-#    image: api-gateway:latest
-#    container_name: api-gateway
-#    build:
-#      context: ../api-gateway
-#      dockerfile: Dockerfile
-#    command: >
-#      uvicorn api.main:app --host 0.0.0.0 --port ${API_GATEWAY_PORT}
-#    ports:
-#      - "${API_GATEWAY_PORT}:${API_GATEWAY_PORT}"
-#    depends_on:
-#      - chat-service
-#      - media-service
-#      - notification-service
-#    env_file:
-#      - .env
-#    volumes:
-#      - ../api-gateway:/app
-
-#  frontend:
-#    image: frontend
-#    container_name: frontend
-#    build:
-#      context: ../frontend
-#      dockerfile: Dockerfile
-#    ports:
-#      - "4200:80"
-#    env_file:
-#      - .env
-#    environment:
-#      BACKEND_HOST: "${BACKEND_HOST}"
-#      BACKEND_PORT: "${BACKEND_PORT}"
-#    depends_on:
-#      - backend
