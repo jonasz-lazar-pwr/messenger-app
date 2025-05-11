@@ -1,0 +1,80 @@
+<div class="container-fluid vh-100">
+  <div class="row h-100">
+
+    <!-- Sidebar -->
+    <div class="col-md-3 border-end d-flex flex-column h-100">
+
+      <!-- Fixed top header -->
+      <div class="border-bottom bg-white py-3 text-center">
+        <h3 class="m-0">
+          {{ activeView === 'chats' ? 'Your Chats.' : 'Your People.' }}
+        </h3>
+      </div>
+
+      <!-- Scrollable content area -->
+      <div class="flex-grow-1 overflow-auto">
+        <ng-container [ngSwitch]="activeView">
+          <app-chat-list
+            *ngSwitchCase="'chats'"
+            (chatSelected)="selectChat($event)"
+            (chatCreated)="onChatCreated($event)"
+            (logout)="logout()"
+          ></app-chat-list>
+
+          <app-user-search
+            *ngSwitchCase="'users'"
+            (chatCreated)="onChatCreated($event)"
+          ></app-user-search>
+        </ng-container>
+      </div>
+
+      <!-- Fixed bottom controls -->
+      <div class="border-top bg-light px-3 pt-3 pb-3">
+        <div class="d-flex justify-content-around mb-3">
+          <button class="btn btn-light" [class.active]="activeView === 'chats'" (click)="switchView('chats')">
+            <i class="bi bi-chat-left-text fs-4 text-secondary"></i>
+          </button>
+          <button class="btn btn-light" [class.active]="activeView === 'users'" (click)="switchView('users')">
+            <i class="bi bi-people fs-4 text-secondary"></i>
+          </button>
+        </div>
+
+        <!-- Logout button -->
+        <button class="btn btn-outline-danger w-100" (click)="logout()">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div class="col-md-9 d-flex flex-column h-100">
+      <ng-container *ngIf="selectedChat; else placeholder">
+        <div class="d-flex flex-column h-100">
+          <div class="chat-header border-bottom p-3 bg-white">
+            <h3 class="m-0">
+              {{ selectedChat.participant.first_name }} {{ selectedChat.participant.last_name }}
+            </h3>
+          </div>
+
+          <app-chat-window
+            #chatWindow
+            class="flex-grow-1 overflow-auto"
+            [selectedChat]="selectedChat"
+            [userSub]="userSub"
+            [messages]="messages"
+            [loadingMessages]="loadingMessages"
+          ></app-chat-window>
+
+          <div class="border-top p-3 bg-white">
+            <app-message-input
+              [chatId]="selectedChat.id"
+              (messageSent)="onMessageSent()"
+            ></app-message-input>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #placeholder>
+        <div class="text-center text-muted mt-5">Select chat from the list</div>
+      </ng-template>
+    </div>
+  </div>
+</div>

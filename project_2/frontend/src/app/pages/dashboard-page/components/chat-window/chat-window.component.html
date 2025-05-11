@@ -1,0 +1,55 @@
+<div class="chat-message-wrapper position-relative d-flex flex-column h-100">
+
+  <!-- Spinner centered over the entire wrapper -->
+  <div *ngIf="loadingMessages" class="chat-loading-spinner text-center">
+    <div class="spinner-border text-primary" role="status"></div>
+    <div class="mt-2 text-muted small">Loading messages...</div>
+  </div>
+
+  <!-- Scrollable list of messages -->
+  <div *ngIf="!loadingMessages" class="chat-message-list flex-grow-1 overflow-y-auto">
+    <div
+      *ngFor="let message of messages"
+      class="mb-2 d-flex"
+      [ngClass]="{
+        'justify-content-end': message.sender_sub === userSub,
+        'justify-content-start': message.sender_sub !== userSub
+      }"
+    >
+      <!-- Text message -->
+      <div
+        *ngIf="message.content"
+        [ngClass]="{
+          'bg-primary text-white': message.sender_sub === userSub,
+          'bg-light text-dark': message.sender_sub !== userSub
+        }"
+        class="chat-bubble-text"
+      >
+        {{ message.content }}
+      </div>
+
+      <!-- Media message -->
+      <ng-container *ngIf="!message.content && message.media_url">
+        <ng-container *ngIf="message.loadFailed; else imageBlock">
+          <div class="text-danger small">
+            Unable to load image:
+            <a [href]="message.media_url" target="_blank">{{ message.media_url }}</a>
+          </div>
+        </ng-container>
+
+        <ng-template #imageBlock>
+          <img
+            [src]="message.media_url"
+            (error)="handleMediaLoadError(message)"
+            (load)="handleMediaLoaded(message)"
+            class="chat-image"
+            alt="media"
+          />
+        </ng-template>
+      </ng-container>
+    </div>
+
+    <div #messagesEnd></div>
+  </div>
+
+</div>

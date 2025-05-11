@@ -1,0 +1,20 @@
+<div class="d-flex flex-column h-100">
+
+  <!-- Chat list scrollable -->
+  <div class="chat-list-container flex-grow-1 overflow-auto">
+    <div
+      *ngFor="let chat of chats"
+      (click)="onSelect(chat)"
+      class="chat-item-tile d-flex align-items-center gap-3 px-3 py-2 border-bottom"
+      [class.active-chat]="selectedChat?.id === chat.id"
+    >
+      <div class="avatar-circle bg-secondary text-white d-flex align-items-center justify-content-center">
+        {{ chat.participant.first_name[0] }}{{ chat.participant.last_name[0] }}
+      </div>
+
+      <div>
+        <div class="fw-semibold">{{ chat.participant.first_name }} {{ chat.participant.last_name }}</div>
+      </div>
+    </div>
+  </div>
+</div>
