@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     NOTIFICATION_RECEIVER_EMAIL: str
     MEDIA_SERVICE_HOST: str
     MEDIA_SERVICE_PORT: int
+    CORS_ALLOW_ORIGINS: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
