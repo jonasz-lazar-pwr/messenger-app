@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     AWS_SESSION_TOKEN: str
     CHAT_SERVICE_HOST: str
     CHAT_SERVICE_PORT: str
+    CORS_ALLOW_ORIGINS: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
