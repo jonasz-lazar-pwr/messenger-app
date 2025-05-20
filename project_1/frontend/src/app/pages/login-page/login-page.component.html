@@ -1,0 +1,21 @@
+<div class="container d-flex justify-content-center align-items-center vh-100">
+  <div class="card p-4 w-50">
+    <h3 class="text-center mb-4">Login to Your Account.</h3>
+
+    <form (ngSubmit)="onSubmit(loginForm)" #loginForm="ngForm">
+      <div class="mb-4">
+        <input type="email" id="email" class="form-control" placeholder="Enter your email" required [(ngModel)]="email" name="email">
+      </div>
+
+      <div class="mb-4">
+        <input type="password" id="password" class="form-control" placeholder="Enter your password" required [(ngModel)]="password" name="password">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mb-1" [disabled]="!loginForm.form.valid">Login</button>
+    </form>
+
+    <div class="mt-3 text-center">
+      <span>Don't have an account? <a routerLink="/register" class="text-primary">Register here</a></span>
+    </div>
+  </div>
+</div>
