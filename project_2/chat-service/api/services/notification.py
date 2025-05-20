@@ -69,7 +69,7 @@ async def send_notification_for_message(
     # 3. Send POST request to the notification-service
     async with httpx.AsyncClient(timeout=5.0) as client:
         response = await client.post(
-            f"http://{settings.NOTIFICATION_SERVICE_HOST}:{settings.NOTIFICATION_SERVICE_PORT}/notifications/send",
+            f"http://{settings.NOTIFICATION_SERVICE_HOST}:{settings.NOTIFICATION_SERVICE_PORT}/notifications/send/",
             json=payload
         )
         response.raise_for_status()

@@ -3,7 +3,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from api.core.middleware import add_middleware
-from api.routes import proxy, health
+from api.routes import proxy
 
 
 @asynccontextmanager
@@ -25,6 +25,14 @@ app = FastAPI(
 # Apply global middleware (e.g., CORS)
 add_middleware(app)
 
+@app.get(
+    "/healthz/",
+    summary="Health check",
+    description="Basic health check endpoint",
+    tags=["Health"]
+)
+def health_check():
+    return {"status": "ok"}
+
 # Mount routers
-app.include_router(health.router, prefix="/healthz")
 app.include_router(proxy.router, prefix="/api")

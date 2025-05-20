@@ -10,7 +10,7 @@ for health checks and notification handling.
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from api.core.middleware import add_middleware
-from api.routes import health, notification
+from api.routes import notification
 
 
 @asynccontextmanager
@@ -35,6 +35,14 @@ app = FastAPI(
 # Apply global middleware (e.g., CORS)
 add_middleware(app)
 
+@app.get(
+    "/healthz/",
+    summary="Health check",
+    description="Basic health check endpoint",
+    tags=["Health"]
+)
+def health_check():
+    return {"status": "ok"}
+
 # Mount routers for different parts of the API
-app.include_router(health.router, prefix="/healthz")
 app.include_router(notification.router, prefix="/notifications")

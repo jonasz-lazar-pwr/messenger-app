@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get(
-    "",
+    "/",
     response_model=list[ChatListItem],
     summary="Get user chats",
     description="Returns all chats for the authenticated user, excluding full user data.",
@@ -87,7 +87,7 @@ async def get_user_chats(
 
 
 @router.post(
-    "",
+    "/",
     response_model=ChatListItem,
     summary="Create a new chat with another user",
     description="Creates a new one-on-one chat unless it already exists. Returns chat ID and basic info about the other participant.",

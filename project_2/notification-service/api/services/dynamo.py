@@ -1,51 +1,61 @@
 # api/services/dynamo.py
 
 """
-DynamoDB service module for storing notifications.
+DynamoDB service.
 
-This module provides functionality to persist notification metadata in a DynamoDB table.
+Provides a globally shared DynamoDB resource and helper function
+to persist notification metadata in DynamoDB.
 """
 
 import boto3
 from api.core.config import settings
 
-# Initialize the DynamoDB resource with proper credentials and endpoint (AWS or LocalStack)
-dynamo = boto3.resource(
-    "dynamodb",
-    endpoint_url=settings.DYNAMODB_ENDPOINT,
-    region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    aws_session_token=settings.AWS_SESSION_TOKEN
-)
+# Shared DynamoDB resource (singleton)
+_dynamodb_resource = None
 
-# Reference to the DynamoDB table where notifications are stored
-table = dynamo.Table(settings.DYNAMODB_NOTIFICATION_TABLE_NAME)
+
+def get_dynamodb():
+    """
+    Lazily initializes and returns a shared DynamoDB resource.
+
+    This function avoids repeated creation of boto3 DynamoDB clients.
+
+    Returns:
+        boto3.resources.factory.dynamodb.ServiceResource: Shared DynamoDB resource.
+    """
+    global _dynamodb_resource
+    if _dynamodb_resource is None:
+        _dynamodb_resource = boto3.resource(
+            "dynamodb",
+            region_name=settings.AWS_REGION,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            aws_session_token=settings.AWS_SESSION_TOKEN,
+        )
+    return _dynamodb_resource
 
 
 async def save_notification(notification_id: str, user_email: str, message: str, sent_at: str):
     """
-    Saves the notification metadata to the DynamoDB Notifications table.
-
-    This function persists the notification record, including the unique ID,
-    recipient email, message content, and timestamp, into DynamoDB.
+    Save a notification record to the DynamoDB Notifications table.
 
     Args:
-        notification_id (str): Unique identifier for the notification (UUID4 string).
-        user_email (str): The email address of the recipient.
-        message (str): The notification message content.
-        sent_at (str): ISO 8601 formatted UTC timestamp representing when the notification was sent.
-
-    Returns:
-        None
+        notification_id (str): UUID string identifying the notification.
+        user_email (str): Email address of the notification recipient.
+        message (str): Message content of the notification.
+        sent_at (str): ISO 8601 UTC timestamp of when the notification was sent.
 
     Raises:
-        boto3.exceptions.Boto3Error: If an error occurs while writing to DynamoDB.
+        Exception: Any boto3 error encountered during the write operation.
     """
+    dynamodb = get_dynamodb()
+    table = dynamodb.Table(settings.AWS_DYNAMODB_NOTIFICATION_TABLE_NAME)
+
     item = {
         "notification_id": notification_id,
         "user_email": user_email,
         "message": message,
         "sent_at": sent_at
     }
+
     table.put_item(Item=item)

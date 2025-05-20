@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/upload",
+    "/upload/",
     response_model=MediaUploadResponse,
     summary="Upload a media file",
     description=(

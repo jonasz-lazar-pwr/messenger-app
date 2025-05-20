@@ -1,32 +1,3 @@
-docker-compose build --no-cache
 docker-compose up --build -d
 docker-compose down -v
 docker-compose exec chat-service sh -c "PYTHONPATH=/app python api/db/init_db.py"
-./init_localstack.sh
-docker logs localstack
-
-aws s3 ls --endpoint-url=http://localhost:4566
-aws s3 ls s3://media-files --endpoint-url=http://localhost:4566
-aws s3 ls s3://media-files/media/ --recursive --endpoint-url=http://localhost:4566
-
-aws dynamodb list-tables --endpoint-url=http://localhost:4566
-
-aws dynamodb scan \
-  --table-name MediaMetadata \
-  --endpoint-url=http://localhost:4566 \
-  --output json | jq
-
-aws dynamodb scan \
-  --table-name Notifications \
-  --endpoint-url=http://localhost:4566 \
-  --output json | jq
-
-aws sns list-topics --endpoint-url=http://localhost:4566
-
-aws sns list-subscriptions-by-topic \
-    --topic-arn arn:aws:sns:us-east-1:000000000000:new-messages-topic \
-    --region us-east-1 \
-    --endpoint-url=http://localhost:4566
-
-aws ses list-identities --endpoint-url=http://localhost:4566
-aws ses list-verified-email-addresses --endpoint-url=http://localhost:4566

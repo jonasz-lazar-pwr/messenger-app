@@ -10,43 +10,50 @@ import boto3
 from datetime import datetime
 from api.core.config import settings
 
+# Shared DynamoDB resource (singleton, initialized once per process)
+_dynamodb_resource = None
+
+
+def get_dynamodb():
+    """
+    Lazily initializes and returns a shared DynamoDB resource.
+
+    This function ensures that boto3 does not create a new
+    resource client on every request, improving performance.
+
+    Returns:
+        boto3.resources.factory.dynamodb.ServiceResource: Shared DynamoDB resource.
+    """
+    global _dynamodb_resource
+    if _dynamodb_resource is None:
+        _dynamodb_resource = boto3.resource(
+            "dynamodb",
+            region_name=settings.AWS_REGION,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            aws_session_token=settings.AWS_SESSION_TOKEN,
+        )
+    return _dynamodb_resource
+
 
 async def save_media_metadata(media_id: str, filename: str, s3_key: str, content_type: str, media_url: str):
     """
-    Save media metadata to DynamoDB.
-
-    This function:
-    - Connects to the configured DynamoDB table.
-    - Prepares a metadata item with details about the uploaded media.
-    - Inserts the item into DynamoDB.
+    Save metadata about an uploaded media file to DynamoDB.
 
     Args:
-        media_id (str): UUID string identifying the media.
-        filename (str): The original filename of the uploaded file.
-        s3_key (str): The S3 object key/path where the file is stored.
-        content_type (str): MIME type of the file (e.g., "image/jpeg").
-        media_url (str): Full URL where the media can be accessed.
+        media_id (str): Unique UUID identifying the media.
+        filename (str): Original filename as uploaded by the user.
+        s3_key (str): Object key under which the file is stored in S3.
+        content_type (str): MIME type of the file (e.g., "image/png").
+        media_url (str): Public or internal URL to access the uploaded media.
 
     Raises:
-        Exception: Any exception from boto3 (e.g., connection or permission errors) will propagate.
+        Exception: Any boto3 error (e.g., access denied, table not found).
     """
-    # Initialize DynamoDB resource
-    dynamodb = boto3.resource(
-        "dynamodb",
-        region_name=settings.AWS_REGION,
-        endpoint_url=settings.DYNAMODB_ENDPOINT,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        aws_session_token=settings.AWS_SESSION_TOKEN,
-    )
-
-    # Get the target table
-    table = dynamodb.Table(settings.DYNAMODB_TABLE_NAME)
-
-    # Timestamp when the upload occurred (ISO format)
+    dynamodb = get_dynamodb()
+    table = dynamodb.Table(settings.AWS_DYNAMODB_MEDIA_TABLE_NAME)
     uploaded_at = datetime.utcnow().isoformat()
 
-    # Put the metadata item into DynamoDB
     table.put_item(Item={
         "id": media_id,
         "filename": filename,

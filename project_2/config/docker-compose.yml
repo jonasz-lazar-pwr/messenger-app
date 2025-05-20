@@ -15,22 +15,6 @@ services:
       - .env
     restart: unless-stopped
 
-  # === LocalStack ===
-  localstack:
-    image: localstack/localstack:latest
-    container_name: localstack
-    environment:
-      - SERVICES=dynamodb,s3,sns,ses
-      - DEFAULT_REGION=${AWS_REGION}
-    ports:
-      - "${LOCALSTACK_PORT}:${LOCALSTACK_PORT}"
-    volumes:
-      - ./localstack:/etc/localstack
-      - /var/run/docker.sock:/var/run/docker.sock
-    env_file:
-      - .env
-    restart: unless-stopped
-
   # === Frontend ===
   frontend:
     image: frontend:latest
@@ -94,8 +78,6 @@ services:
       uvicorn api.main:app --host 0.0.0.0 --port ${MEDIA_SERVICE_PORT}
     ports:
       - "${MEDIA_SERVICE_PORT}:${MEDIA_SERVICE_PORT}"
-    depends_on:
-      - localstack
     env_file:
       - .env
     volumes:
@@ -112,8 +94,6 @@ services:
       uvicorn api.main:app --host 0.0.0.0 --port ${NOTIFICATION_SERVICE_PORT}
     ports:
       - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
-    depends_on:
-      - localstack
     env_file:
       - .env
     volumes:

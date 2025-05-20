@@ -18,7 +18,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/send",
+    "/send/",
     response_model=NotificationOut,
     summary="Send a notification",
     description=(

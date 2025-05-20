@@ -23,8 +23,12 @@ DATABASE_URL = (
 # Create an async SQLAlchemy engine
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,           # Logs SQL statements for debugging
-    pool_pre_ping=True,  # Checks if connections are alive
+    echo=False,
+    pool_pre_ping=True,      # Check if connections are alive before using them
+    pool_size=5,             # Initial number of connections in the pool
+    max_overflow=10,         # Max number of connections to create beyond the pool size
+    pool_timeout=30,         # Max wait time for a connection from the pool
+    pool_recycle=1800,       # Refresh the connection every 30 minutes
 )
 
 # Create an async session factory

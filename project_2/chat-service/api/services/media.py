@@ -48,7 +48,7 @@ async def upload_media_to_s3(media_file: UploadFile) -> dict:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
-                f"http://{settings.MEDIA_SERVICE_HOST}:{settings.MEDIA_SERVICE_PORT}/media/upload",
+                f"http://{settings.MEDIA_SERVICE_HOST}:{settings.MEDIA_SERVICE_PORT}/media/upload/",
                 files=form_data
             )
         response.raise_for_status()

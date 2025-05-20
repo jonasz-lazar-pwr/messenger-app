@@ -26,7 +26,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/register",
+    "/register/",
     response_model=UserRegisterOut,
     status_code=201,
     summary="Register a new user",

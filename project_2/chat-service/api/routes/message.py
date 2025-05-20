@@ -61,7 +61,7 @@ async def get_validated_chat_and_user(
 router = APIRouter()
 
 @router.post(
-    "/text",
+    "/text/",
     response_model=MessageOut,
     summary="Create a new text message",
     description=(
@@ -144,7 +144,7 @@ async def create_text_message(
 
 
 @router.post(
-    "/media",
+    "/media/",
     response_model=MessageOut,
     summary="Create a new media message",
     description=(
@@ -217,7 +217,7 @@ async def create_media_message(
 
 
 @router.get(
-    "/{chat_id}",
+    "/{chat_id}/",
     response_model=list[MessageOut],
     summary="Get messages from a chat",
     description=(

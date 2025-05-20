@@ -8,9 +8,7 @@ ENV PYTHONUNBUFFERED=1
 RUN apk add --no-cache gcc musl-dev libpq-dev
 
 WORKDIR /app
-
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Final stage – cleaner and smaller image
@@ -31,11 +29,11 @@ COPY --from=build-stage /usr/local/bin /usr/local/bin
 # Copy application source code
 COPY . .
 
-# Expose FastAPI port
-EXPOSE 8002
+# Expose port
+EXPOSE 8000
 
 # Remove pip cache (cleanup)
 RUN rm -rf /root/.cache
 
-# Default command to start FastAPI media-service
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8002"]
+# Default command to start media-service
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
