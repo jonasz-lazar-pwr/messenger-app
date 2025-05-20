@@ -1,74 +1,97 @@
 # Messenger App
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![AWS Deployment](https://img.shields.io/badge/deployed-AWS-232F3E)
-![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
+![AWS Deployment](https://img.shields.io/badge/deployed-AWS%20Fargate-232F3E)
+![Backend](https://img.shields.io/badge/backend-FastAPI%20(Python)-009688)
 ![Frontend](https://img.shields.io/badge/frontend-Angular-DD0031)
-![Docker](https://img.shields.io/badge/containerized-Docker-2496ED)
+![Containerization](https://img.shields.io/badge/containerized-Docker-2496ED)
+![Orchestration](https://img.shields.io/badge/orchestration-ECS%20Fargate-FF9900)
 ![Infrastructure as Code](https://img.shields.io/badge/IaC-Terraform-623CE4)
-![Database](https://img.shields.io/badge/database-PostgreSQL-336791)
+![Databases](https://img.shields.io/badge/databases-RDS%20PostgreSQL%20%7C%20DynamoDB-336791)
 ![Storage](https://img.shields.io/badge/storage-S3-569A31)
 ![Authentication](https://img.shields.io/badge/authentication-Cognito-FF9900)
+![Notifications](https://img.shields.io/badge/notifications-SNS-D854A1)
+
+![Messenger App Dashboard](./assets/images/messenger-dashboard-screenshot.png)
 
 ## Table of Contents
 - [About the Project](#about-the-project)
-- [Features](#features)
-- [Architecture](#architecture)
+- [Features & Microservice Architecture](#features--microservice-architecture)
 - [Technologies](#technologies)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
+- [AWS Infrastructure Overview](#aws-infrastructure-overview)
+- [Deployment with Terraform](#deployment-with-terraform)
 - [License](#license)
 
 ## About the Project
-Messenger App is a simple web-based chat application that allows users to participate in conversations by sending text messages and media files. This project is designed with a modular architecture, separating the frontend and backend into independent services.
-It focuses on delivering a functional, user-friendly, and scalable chat experience deployed in the cloud.
+Messenger App is a web-based chat application allowing users to exchange text messages and media files. This version of the project has been re-architected into a **microservices-based system**, with each service independently deployable and scalable.
+The entire application is hosted on **AWS using ECS Fargate**, managed by **Terraform**, focusing on a cloud-native, resilient, and modern chat experience.
 
-## Features
-- 📨 **Real-time Messaging** - Users can exchange text messages within conversations.
-- 📁 **Media File Uploads** - Support for sending and receiving media files via the chat interface.
-- 🔐 **User Authentication** - Secure login and session management powered by AWS Cognito.
-- 🛠️ **Modular Architecture** - Separation of concerns between the Angular frontend and FastAPI backend.
-- ☁️ **Cloud Deployment** - Full deployment on AWS infrastructure using Elastic Beanstalk, RDS, S3, and CloudWatch.
-- 🐳 **Dockerized Services** - Both frontend and backend are containerized using Docker for easy deployment.
-- 🏗️ **Infrastructure as Code** - Terraform used for automating the provisioning of cloud infrastructure.
-- 📊 **Monitoring and Logging** - Application and infrastructure logs collected and monitored through AWS CloudWatch.
-- 🛡️ **Secure Media Storage** - Uploaded media files are securely stored in AWS S3 buckets.
-- 🧩 **RESTful API** - Backend provides a clean and well-structured RESTful API for frontend communication.
+## Features & Microservice Architecture
 
-## Architecture
-- **Frontend** - Developed using **Angular**, the frontend delivers a responsive SPA that communicates with the backend via REST API. It also manages the OAuth2-based authentication flow with AWS Cognito.
-- **Backend** - Powered by **FastAPI**, the backend handles user authentication, conversation management, message processing, and file uploads. It secures all API endpoints using JWT tokens issued by AWS Cognito.
-- **Authentication** - User authentication and authorization are managed via **AWS Cognito**, providing secure, scalable identity management.
-- **Database** - Persistent storage for users, conversations, and messages is provided by a **PostgreSQL** database hosted on **Amazon RDS**.
-- **Media Storage** - Media files exchanged between users are securely stored in **AWS S3** buckets.
-- **Deployment** - Both frontend and backend services are containerized using **Docker** and deployed independently on **AWS Elastic Beanstalk** environments.
-- **Infrastructure Management** - The entire AWS infrastructure (Elastic Beanstalk, RDS, S3, CloudWatch, VPC) is provisioned and managed through **Terraform**, embracing Infrastructure as Code (IaC) practices.
+Messenger App is a cloud-native application built with a microservice architecture to deliver a scalable and resilient chat experience. Key features are supported by dedicated, independently deployable services:
+
+*   📨 **Real-time Messaging & Chat Management:**
+    *   Users can exchange text messages within conversations.
+    *   Handled by the **Chat Service** using AWS RDS PostgreSQL for data storage.
+*   📁 **Media File Handling:**
+    *   Support for sending, receiving, and storing media files.
+    *   Managed by the **Media Service**, utilizing AWS S3 for file storage and DynamoDB for metadata.
+*   🔐 **User Authentication & Authorization:**
+    *   Secure user registration, login, and session management powered by **AWS Cognito**.
+    *   Validated by the **API Gateway Service**.
+*   🔔 **User Notifications:**
+    *   Real-time or asynchronous notifications for events like new messages.
+    *   Powered by the **Notification Service**) using AWS SNS and DynamoDB for history.
+*   ⚙️ **API Orchestration & Frontend Delivery:**
+    *   **API Gateway Service** acts as the central entry point, routing client requests to backend services and handling authentication.
+    *   **Frontend Service** provides the responsive user interface (SPA), managing client-side interactions and the OIDC flow.
+*   ☁️ **Cloud-Native Foundation:**
+    *   All services are **Dockerized** and deployed on **AWS ECS Fargate** for serverless container orchestration.
+    *   Each service benefits from **Application Auto Scaling** and a minimum of two replicas for high availability.
+    *   The entire infrastructure is defined and managed using **Terraform (IaC)**.
+    *   Logs are centralized in **AWS CloudWatch Logs**.
 
 ## Technologies
-| Part               | Technologies                                     |
-|--------------------|--------------------------------------------------|
-| **Frontend**       | Angular, Bootstrap, Docker                       |
-| **Backend**        | Python, FastAPI, SQLAlchemy, Docker              |
-| **Authentication** | AWS Cognito                                      |
-| **Database**       | PostgreSQL (Amazon RDS)                          |
-| **Storage**        | AWS S3                                           |
-| **Infrastructure** | Terraform, AWS Elastic Beanstalk, AWS CloudWatch |
+| Component                | Technologies & AWS Services                         |
+|--------------------------|-----------------------------------------------------|
+| **Frontend**             | Angular, Bootstrap, Docker                          |
+| **API Gateway**          | Python, FastAPI, Docker                             |
+| **Chat Service**         | Python, FastAPI, SQLAlchemy, Docker, AWS RDS        |
+| **Media Service**        | Python, FastAPI, Docker, AWS S3, DynamoDB           |
+| **Notification Service** | Python, FastAPI, Docker, AWS SNS, DynamoDB          |
+| **Authentication**       | AWS Cognito (User Pools, App Clients)               |
+| **Containerization**     | Docker                                              |
+| **Orchestration**        | AWS ECS Fargate, Application Auto Scaling           |
+| **Load Balancing**       | AWS Application Load Balancer (ALB)                 |
+| **Infrastructure (IaC)** | Terraform                                           |
+| **Logging**              | AWS CloudWatch Logs                                 |
+| **Networking**           | AWS VPC, Subnets, Security Groups, Internet Gateway |
+| **Container Registry**   | AWS ECR (Elastic Container Registry)                |
 
-## Deployment
-The deployment process for the Messenger App is fully automated using **Terraform**:
+## AWS Infrastructure Overview
+The application's cloud infrastructure, managed by Terraform, leverages the following core AWS services:
 
-1. **Infrastructure Provisioning**  
-   Terraform scripts located in the `config/terraform/` directory automate the creation of all necessary AWS resources.  
-   Running `terraform apply` provisions the entire cloud environment, including VPC, RDS, S3, CloudWatch, Cognito, and Elastic Beanstalk environments.
+-   **Networking (VPC):** A custom Virtual Private Cloud providing network isolation, configured with public subnets.
+-   **Load Balancing (ALB):** Application Load Balancers for distributing traffic; public-facing for `frontend` and `api-gateway` (HTTPS), and internal for backend microservices (HTTP).
+-   **Container Orchestration (ECS & Fargate):** An ECS Cluster (`messenger-app-cluster`) running all application services as serverless Fargate tasks, with auto-scaling enabled.
+-   **Container Registry (ECR):** Dedicated ECR repositories for storing Docker images of each microservice.
+-   **Databases:**
+    *   **RDS PostgreSQL:** For `chat-service` data.
+    *   **DynamoDB:** For `media-service` metadata and `notification-service` history.
+-   **Storage (S3):** An S3 bucket for media file storage.
+-   **Messaging (SNS):** An SNS topic for user notifications.
+-   **Identity (Cognito):** A User Pool and App Client for user authentication and management.
+-   **Security & Access (IAM):** Roles and policies, including the ECS Task Execution Role, to manage permissions.
 
-2. **Application Deployment**  
-   Both the frontend and backend are containerized using Docker and deployed independently to AWS Elastic Beanstalk environments.
+## Deployment with Terraform
 
-3. **Configuration Management**  
-   Application environment variables, database connection strings, and AWS credentials are securely managed through Elastic Beanstalk environment settings.
+The entire cloud infrastructure is provisioned and managed using Terraform. The code is organized into reusable modules (`terraform/modules/`) orchestrated by the root `main.tf`.
 
-## Documentation
-A full report and technical documentation of the project can be found [here](./docs/Messenger%20App%20-%20Report.pdf).
+1.  **Prerequisites:** Ensure AWS CLI is configured and Terraform is installed.
+2.  **Build & Push Docker Images:** Build Docker images for all services (`frontend`, `api-gateway`, `chat-service`, `media-service`, `notification-service`) and push them to their respective ECR repositories. This step is crucial if task definitions will reference new image tags.
+3.  **Initialize Terraform:** Navigate to the Terraform root directory (e.g., `terraform/`) and run `terraform init`.
+4.  **Plan Changes:** Execute `terraform plan -out=tfplan` to review the planned infrastructure changes.
+5.  **Apply Changes:** Run `terraform apply tfplan` to create or update the AWS resources.
 
 ## License
 This project is licensed under the terms of the MIT License. See the [LICENSE](./LICENSE) file for details.
