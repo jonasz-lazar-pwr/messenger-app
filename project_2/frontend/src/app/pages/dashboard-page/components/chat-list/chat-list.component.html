@@ -1,7 +1,13 @@
-<div class="d-flex flex-column h-100">
+<div class="d-flex flex-column h-100 position-relative">
+
+  <!-- Spinner centered -->
+  <div *ngIf="loadingChats" class="chat-loading-spinner text-center">
+    <div class="spinner-border text-primary" role="status"></div>
+    <div class="mt-2 text-muted small">Loading chats...</div>
+  </div>
 
   <!-- Chat list scrollable -->
-  <div class="chat-list-container flex-grow-1 overflow-auto">
+  <div *ngIf="!loadingChats" class="chat-list-container flex-grow-1 overflow-auto">
     <div
       *ngFor="let chat of chats"
       (click)="onSelect(chat)"

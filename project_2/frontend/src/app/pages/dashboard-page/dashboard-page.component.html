@@ -16,6 +16,7 @@
         <ng-container [ngSwitch]="activeView">
           <app-chat-list
             *ngSwitchCase="'chats'"
+            [selectedChat]="selectedChat"
             (chatSelected)="selectChat($event)"
             (chatCreated)="onChatCreated($event)"
             (logout)="logout()"

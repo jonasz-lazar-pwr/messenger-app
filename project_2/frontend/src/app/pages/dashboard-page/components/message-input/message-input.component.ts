@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from '../../../../services/message.service';
-import { MessageStoreService } from '../../../../services/message-store.service';
+
 
 @Component({
   selector: 'app-message-input',
@@ -10,14 +10,14 @@ import { MessageStoreService } from '../../../../services/message-store.service'
 })
 export class MessageInputComponent {
   @Input() chatId!: number;
-  @Output() messageSent = new EventEmitter<void>();
+  @Output() messageSent = new EventEmitter<any>();
 
   newMessage: string = '';
   selectedFile: File | null = null;
+  sending: boolean = false;
 
   constructor(
-    private messageService: MessageService,
-    private messageStore: MessageStoreService
+    private messageService: MessageService
   ) {}
 
   onFileSelected(event: any) {
@@ -30,20 +30,34 @@ export class MessageInputComponent {
   }
 
   send(): void {
-    if (!this.chatId) return;
+    if (!this.chatId || this.sending) return;
+
+    this.sending = true;
 
     if (this.selectedFile) {
-      this.messageService.sendMediaMessage(this.chatId, this.selectedFile).subscribe(msg => {
-        this.messageStore.setMessages([...this.messageStore.getMessages(), msg]);
-        this.selectedFile = null;
-        this.messageSent.emit();
+      this.messageService.sendMediaMessage(this.chatId, this.selectedFile).subscribe({
+        next: (msg) => {
+          this.selectedFile = null;
+          this.messageSent.emit();
+          this.sending = false;
+        },
+        error: () => {
+          this.sending = false;
+        }
       });
     } else if (this.newMessage.trim()) {
-      this.messageService.sendTextMessage(this.chatId, this.newMessage).subscribe(msg => {
-        this.messageStore.setMessages([...this.messageStore.getMessages(), msg]);
-        this.newMessage = '';
-        this.messageSent.emit();
+      this.messageService.sendTextMessage(this.chatId, this.newMessage).subscribe({
+        next: (msg) => {
+          this.newMessage = '';
+          this.messageSent.emit();
+          this.sending = false;
+        },
+        error: () => {
+          this.sending = false;
+        }
       });
+    } else {
+      this.sending = false;
     }
   }
 }

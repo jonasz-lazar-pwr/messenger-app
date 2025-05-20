@@ -22,7 +22,12 @@
     [placeholder]="selectedFile ? '' : 'Type your message...'"
   />
 
-  <button type="submit" class="btn btn-primary">
-    <i class="bi bi-send"></i>
+  <button type="submit" class="btn btn-primary" [disabled]="sending">
+    <ng-container *ngIf="!sending; else loadingIcon">
+      <i class="bi bi-send"></i>
+    </ng-container>
+    <ng-template #loadingIcon>
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    </ng-template>
   </button>
 </form>

@@ -1,4 +1,12 @@
-import { Component, ElementRef, Input, ViewChild, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Input,
+  ViewChild,
+  AfterViewChecked,
+  OnChanges
+} from '@angular/core';
+
 
 @Component({
   selector: 'app-chat-window',
@@ -6,7 +14,7 @@ import { Component, ElementRef, Input, ViewChild, AfterViewChecked, ChangeDetect
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.css']
 })
-export class ChatWindowComponent implements AfterViewChecked {
+export class ChatWindowComponent implements AfterViewChecked, OnChanges {
   @Input() selectedChat: any;
   @Input() userSub: string | null = null;
   @Input() messages: any[] = [];
@@ -14,13 +22,17 @@ export class ChatWindowComponent implements AfterViewChecked {
 
   @ViewChild('messagesEnd') messagesEnd!: ElementRef;
 
-  constructor(
-    private cdRef: ChangeDetectorRef
-  ) {}
+  private autoScrollEnabled = true;
 
   ngAfterViewChecked(): void {
-    // Ensure DOM is fully updated before scrolling
-    this.scrollToBottom();
+    if (this.autoScrollEnabled) {
+      this.scrollToBottom();
+      this.autoScrollEnabled = false;
+    }
+  }
+
+  ngOnChanges(): void {
+    this.autoScrollEnabled = true;
   }
 
   handleMediaLoadError(message: any): void {
