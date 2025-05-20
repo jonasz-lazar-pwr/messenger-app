@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { jwtDecode } from 'jwt-decode';
 import { runtimeEnv } from '../../environments/runtime-env';
 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -59,7 +60,7 @@ export class AuthService {
 
   // Sends a POST request to backend to register a user (only called once after login)
   registerUser(): Observable<boolean> {
-    return this.http.post('/api/users/register', null).pipe(
+    return this.http.post('/api/users/register/', null).pipe(
       map(() => true),
       catchError(error => {
         console.error('User registration failed:', error);
