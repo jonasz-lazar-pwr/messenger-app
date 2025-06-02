@@ -1,0 +1,19 @@
+.user-highlight .highlighted {
+  background-color: #e2f0ff;
+  border-radius: 3px;
+  padding: 0
+}
+
+.chat-loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  text-align: center;
+}
+
+.results-wrapper {
+  position: relative;
+  min-height: 150px;
+}

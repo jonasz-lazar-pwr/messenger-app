@@ -1,0 +1,13 @@
+.chat-image {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.chat-bubble-text {
+  padding: 0.5rem 0.75rem;
+  border-radius: 50rem;
+  max-width: 60%;
+  word-wrap: break-word;
+}
