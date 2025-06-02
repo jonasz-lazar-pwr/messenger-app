@@ -7,10 +7,10 @@ This module initializes the FastAPI application, sets up middleware,
 mounts all the routers, and defines lifecycle events.
 
 Mounted routers:
-- /healthz: Health check endpoint.
-- /api/messages: Message-related endpoints (create, get messages).
-- /api/chats: Chat-related endpoints (list chats).
-- /api/users: User-related endpoints (search, register).
+- /healthz/: Health check endpoint.
+- /messages: Message-related endpoints (create, get messages).
+- /chats: Chat-related endpoints (list chats).
+- /users: User-related endpoints (search, register).
 
 The service handles user-to-user chat functionality, including messages,
 file attachments (via the media service), and user discovery.
