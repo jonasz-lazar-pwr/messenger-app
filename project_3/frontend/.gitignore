@@ -1,0 +1,38 @@
+# Compiled output
+/dist/
+/out-tsc/
+/tmp/
+/bazel-out/
+
+# Angular CLI cache
+/.angular/cache/
+
+# Dependency directories
+/node_modules/
+
+# Build artifacts and logs
+/coverage/
+/libpeerconnection.log
+npm-debug.log*
+yarn-error.log*
+testem.log
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.launch
+.settings/
+.project
+.classpath
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Miscellaneous
+/connect.lock
+.sass-cache/
+.typings
